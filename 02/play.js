@@ -9,6 +9,7 @@ sayHello();
 */
 
 
+
 // 1. Lexical analysis:
 // tokenKind
 var TokenKind;
@@ -22,50 +23,180 @@ var TokenKind;
 })(TokenKind || (TokenKind = {}));
 ;
 
-// given a token array after Lexical analysis
-let tokenArray = [
-    { kind: TokenKind.Keyword, text: 'function' },
-    { kind: TokenKind.Identifier, text: 'sayHello' },
-    { kind: TokenKind.Seperator, text: '(' },
-    { kind: TokenKind.Seperator, text: ')' },
-    { kind: TokenKind.Seperator, text: '{' },
-    { kind: TokenKind.Identifier, text: 'println' },
-    { kind: TokenKind.Seperator, text: '(' },
-    { kind: TokenKind.StringLiteral, text: 'Hello World!' },
-    { kind: TokenKind.Seperator, text: ')' },
-    { kind: TokenKind.Seperator, text: ';' },
-    { kind: TokenKind.Seperator, text: '}' },
-    { kind: TokenKind.Identifier, text: 'sayHello' },
-    { kind: TokenKind.Seperator, text: '(' },
-    { kind: TokenKind.Seperator, text: ')' },
-    { kind: TokenKind.Seperator, text: ';' },
-    { kind: TokenKind.EOF, text: '' }
-];
+// // given a token array after Lexical analysis
+// let tokenArray = [
+//     { kind: TokenKind.Keyword, text: 'function' },
+//     { kind: TokenKind.Identifier, text: 'sayHello' },
+//     { kind: TokenKind.Seperator, text: '(' },
+//     { kind: TokenKind.Seperator, text: ')' },
+//     { kind: TokenKind.Seperator, text: '{' },
+//     { kind: TokenKind.Identifier, text: 'println' },
+//     { kind: TokenKind.Seperator, text: '(' },
+//     { kind: TokenKind.StringLiteral, text: 'Hello World!' },
+//     { kind: TokenKind.Seperator, text: ')' },
+//     { kind: TokenKind.Seperator, text: ';' },
+//     { kind: TokenKind.Seperator, text: '}' },
+//     { kind: TokenKind.Identifier, text: 'sayHello' },
+//     { kind: TokenKind.Seperator, text: '(' },
+//     { kind: TokenKind.Seperator, text: ')' },
+//     { kind: TokenKind.Seperator, text: ';' },
+//     { kind: TokenKind.EOF, text: '' }
+// ];
 
-// Lexical analysis
-class Tokenizer {
-    //token is a array
-    constructor(tokens) {
+
+/**
+ * a char team with 3 operations
+ */
+class CharStream {
+    constructor(data) {
         this.pos = 0;
-        this.tokens = tokens;
+        this.line = 1;
+        this.col = 0;
+        this.data = data;
     }
-
+    // peek but no moving the point.
+    peek() {
+        return this.data.chatAt(this.pos);
+    }
+    // this order will move point next spot.
     next() {
-        if (this.pos <= this.tokens.length) {
-            return this.tokens[this.pos++];
+        let ch = this.data.charAt(this.pos);
+        this.pos++;
+        // when encount a '\n', update line and col.
+        if (ch == '\n') {
+            this.line++;
+            this.col = 0;
         }
-        // if till the end of token , always return EOF
-        return this.tokens[this.pos];
+        this.col++;
+        return ch;
     }
-
-    position() {
-        return this.pos;
-    }
-    // if parse failed, we need traceback the start pos.
-    traceBack(newPos) {
-        this.pos = newPos;
+    // tell if we arrive the end.
+    eof() {
+        return this.peek() == '';
     }
 }
+
+/**
+ * Lexical analysis
+ */
+class Tokenizer {
+    constructor(stream) {
+        this.nextToken = { kind: TokenKind.EOF, text: "" };
+        this.stream = stream;
+    }
+    next() {
+        // parse a token first
+        if (this.nextToken.kind == TokenKind.EOF && !this.stream.eof()) {
+            this.nextToken = this.getAToken();
+        }
+        let lastToken = this.nextToken;
+        this.nextToken = this.getAToken();
+        return lastToken;
+    }
+    peek() {
+        if (this.nextToken.kind == TokenKind.EOF && !this.stream.eof()) {
+            this.nextToken = this.getAToken();
+        }
+        return this.nextToken;
+    }
+    getAToken() {
+        this.skipWhiteSpaces();
+        if (this.stream.eof) {
+            return { kind: TokenKind.EOF, text: "" };
+        }
+        let ch = this.stream.peek();
+        if (this.isLetter(ch) || this.isDigit(ch)) {
+            return this.parseIdentifer();
+        }
+        if (ch == '"') {
+            return this.parseStringLiteral();
+        }
+        if (ch == '(' || ch == ')' || ch == '{' || ch == '}' || ch == ';' || ch == ',') {
+            this.stream.next();
+            return { kind: TokenKind.Seperator, text: ch };
+        }
+        if (ch == '/') {
+            this.stream.next();
+            let ch1 = this.stream.peek();
+            if (ch1 == '*') {
+                this.skipMultipleLineComments();
+                return this.getAToken();
+            }
+            if (ch == '/') {
+                this.skipSingleLineComment();
+                return this.getAToken();
+            }
+            if (ch == '=') {
+                this.stream.next();
+                return { kind: TokenKind.Operator, text: '/=' };
+            }
+            return { kind: TokenKind.Operator, text: '/' };
+        }
+        if (ch == '*') {
+            this.stream.next();
+            let ch1 = this.stream.peek();
+            if (ch == '=') {
+                this.stream.next();
+                return { kind: TokenKind.Operator, text: '*=' };
+            }
+            return { kind: TokenKind.Operator, text: '*' };
+        }
+        if (ch == '+') {
+            this.stream.next();
+            let ch1 = this.stream.peek();
+            if (ch1 == '+') {
+                this.stream.next();
+                return { kind: TokenKind.Operator, text: '++' };
+            }
+            if (ch == '=') {
+                this.stream.next();
+                return { kind: TokenKind.Operator, text: '+=' };
+            }
+            return { kind: TokenKind.Operator, text: '+' };
+        }
+        if (ch == '-') {
+            this.stream.next();
+            let ch1 = this.stream.peek();
+            if (ch1 == '-') {
+                this.stream.next();
+                return { kind: TokenKind.Operator, text: '--' };
+            }
+            if (ch == '=') {
+                this.stream.next();
+                return { kind: TokenKind.Operator, text: '-=' };
+            }
+            return { kind: TokenKind.Operator, text: '-' };
+        }
+        console.log("Unrecognized pattern meeting ': " + ch + "', at" + this.stream.line + " col: " + this.stream.col);
+        this.stream.next();
+        return this.getAToken();
+    }
+    /**
+     * skip the space
+     */
+    skipWhiteSpaces() {
+        while (this.isWhiteSpace(this.stream.peek())) {
+            this.stream.next();
+        }
+    }
+    /** 
+    * skip multiple line comment
+    */
+    /**
+    * skip single line comment
+    */
+    /**
+    * skip multiple line comment
+    */
+    
+    // todo : parseStringLiteral, parseIndentifer
+    // todo : isLetterDigitOrUnderScore
+    // todo isLetter, isDigit, isWhiteSpace
+    /**
+    * 
+    */
+}
+//todo: update syntax analysis, apply ll algorithm
 
 // 2. syntax analysis
 // data structure
