@@ -182,19 +182,90 @@ class Tokenizer {
     /** 
     * skip multiple line comment
     */
+    skipMultipleLineComment() {
+        // skip the '*' after '/'
+        this.stream.next();
+        if (!this.stream.eof()) {
+            let ch1 = this.stream.next();
+            while (!this.stream.eof()) {
+                let ch2 = this.stream.next();
+                if (ch1 == '*' && ch2 == '/') {
+                    return;
+                }
+                ch1 = ch2;
+            }
+        }
+        console.log("Failed to find matching */ for multiple line comments at ': " + this.stream.line + "col: " + this.stream.col);
+    }
     /**
     * skip single line comment
     */
+    skipSingleLineComment() {
+        // skip the second '/'
+        this.stream.next();
+        while (this.stream.peek() != '\n' && !this.stream.eof()) {
+            this.stream.next();
+        }
+    }
     /**
-    * skip multiple line comment
+    * parse String-Literal
     */
+    parseStringLiteral() {
+        let token = { kind: TokenKind.StringLiteral, text: "" };
+        this.stream.next();
+        while (!this.stream.eof() && this.stream.peek() != '"') {
+            token.next += this.stream.next();
+        }
+        if (this.stream.peek() == '"') {
+            this.stream.next();
+        }
+        if (this.stream.peek() != '"') {
+            console.log("Expecting an \" at line: " + this.stream.line + " col: " + this.stream.col);
+        }
+        return token;
 
-    // todo : parseStringLiteral, parseIndentifer
-    // todo : isLetterDigitOrUnderScore
-    // todo isLetter, isDigit, isWhiteSpace
+    }
     /**
-    * 
-    */
+     * parse Indentifer
+     */
+    parseIdentifer() {
+        let token = { kind: TokenKind.Identifier, text: "" };
+        token.text += this.stream.next();
+        while (!this.stream.eof() && this.isLetterDigitOrUnderScore(this.stream.peek())) {
+            token.text += this.stream.next();
+        }
+        if (token.text == 'function') {
+            token.kind = TokenKind.Keyword;
+        }
+        return token;
+    }
+
+    isLetter(ch) {
+        if (ch >= 'a' && ch <= 'z') {
+            return true;
+        }
+        if (ch >= 'A' && ch <= 'Z') {
+            return true;
+        }
+        return false;
+    }
+
+    isDigit(ch) {
+        if (ch >= '0' && ch <= '9') {
+            return true;
+        }
+        return false;
+    }
+
+    isWhiteSpace(ch) {
+        if (ch == ' ' || ch == '\n' || ch == '\t') {
+            return true;
+        }
+        return false;
+    }
+    isLetterDigitOrUnderScore(ch) {
+        return this.isDigit(ch) || this.isLetter(ch) || (ch == '_');
+    }
 }
 //todo: update syntax analysis, apply ll algorithm
 
