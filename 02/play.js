@@ -101,7 +101,7 @@ class Tokenizer {
     }
     getAToken() {
         this.skipWhiteSpaces();
-        if (this.stream.eof) {
+        if (this.stream.eof()) {
             return { kind: TokenKind.EOF, text: "" };
         }
         let ch = this.stream.peek();
@@ -182,53 +182,136 @@ class Tokenizer {
     /** 
     * skip multiple line comment
     */
+    skipMultipleLineComment() {
+        // skip the '*' after '/'
+        this.stream.next();
+        if (!this.stream.eof()) {
+            let ch1 = this.stream.next();
+            while (!this.stream.eof()) {
+                let ch2 = this.stream.next();
+                if (ch1 == '*' && ch2 == '/') {
+                    return;
+                }
+                ch1 = ch2;
+            }
+        }
+        console.log("Failed to find matching */ for multiple line comments at ': " + this.stream.line + "col: " + this.stream.col);
+    }
     /**
     * skip single line comment
     */
-    /**
-    * skip multiple line comment
-    */
-    
-    // todo : parseStringLiteral, parseIndentifer
-    // todo : isLetterDigitOrUnderScore
-    // todo isLetter, isDigit, isWhiteSpace
-    /**
-    * 
-    */
-}
-//todo: update syntax analysis, apply ll algorithm
-
-// 2. syntax analysis
-// data structure
-// ASTNode: basic class
-class AstNode {
-}
-
-// statement
-class Statement extends AstNode {
-    static isStatementNode(node) {
-        if (!node) {
-            return false;
+    skipSingleLineComment() {
+        // skip the second '/'
+        this.stream.next();
+        while (this.stream.peek() != '\n' && !this.stream.eof()) {
+            this.stream.next();
         }
-        return true;
+    }
+    /**
+    * parse String-Literal
+    */
+    parseStringLiteral() {
+        let token = { kind: TokenKind.StringLiteral, text: "" };
+        this.stream.next();
+        while (!this.stream.eof() && this.stream.peek() != '"') {
+            token.text += this.stream.next();
+        }
+        if (this.stream.peek() == '"') {
+            this.stream.next();
+        }
+        if (this.stream.peek() != '"') {
+            console.log("Expecting an \" at line: " + this.stream.line + " col: " + this.stream.col);
+        }
+        return token;
+
+    }
+    /**
+     * parse Indentifer
+     */
+    parseIdentifer() {
+        let token = { kind: TokenKind.Identifier, text: "" };
+        token.text += this.stream.next();
+        while (!this.stream.eof() && this.isLetterDigitOrUnderScore(this.stream.peek())) {
+            token.text += this.stream.next();
+        }
+        if (token.text == 'function') {
+            token.kind = TokenKind.Keyword;
+        }
+        return token;
+    }
+
+    isLetter(ch) {
+        if (ch >= 'a' && ch <= 'z') {
+            return true;
+        }
+        if (ch >= 'A' && ch <= 'Z') {
+            return true;
+        }
+        return false;
+    }
+
+    isDigit(ch) {
+        if (ch >= '0' && ch <= '9') {
+            return true;
+        }
+        return false;
+    }
+
+    isWhiteSpace(ch) {
+        if (ch == ' ' || ch == '\n' || ch == '\t') {
+            return true;
+        }
+        return false;
+    }
+    isLetterDigitOrUnderScore(ch) {
+        return this.isDigit(ch) || this.isLetter(ch) || (ch == '_');
     }
 }
 
-// root Node of AST 
+
+//todo: update syntax analysis, apply ll algorithm
+///////////////////////////////////////////////////////
+//// 2. syntax analysis
+
+/**
+ * ASTNode
+ * basic class
+ */
+class AstNode {
+}
+
+/**
+ * statement:
+ * the father of functionDecl & functionCall
+ */
+class Statement extends AstNode {
+    // static isStatementNode(node) {
+    //     if (!node) {
+    //         return false;
+    //     }
+    //     return true;
+    // }
+}
+
+/**
+ * root of AST 
+ */
 class Prog extends AstNode {
     constructor(stmts) {
         // ES6 class 可以通过extends关键字实现继承，而同时子类必须在 constructor 方法中调用super方法，否则新建实例时会报错。
         super();
+        this.stmts = [];
         this.stmts = stmts;
     }
-    // do not understand:
     dump(prefix) {
         console.log(prefix + "Prog");
         this.stmts.forEach(x => x.dump(prefix + "\t"));
     }
 }
 
-// FunctionDecl node
+/**
+ * node of FunctionDecl
+ */
 class FunctionDecl extends Statement {
     constructor(name, body) {
         super();
@@ -241,21 +324,23 @@ class FunctionDecl extends Statement {
     }
 }
 
-// FunctionBody
+/**
+ * node of FunctionBody
+ */
 class FunctionBody extends AstNode {
     constructor(stmts) {
         super();
         this.stmts = stmts;
     }
-    static isFunctionBodyNode(node) {
-        if (!node) {
-            return false;
-        }
-        if (Object.getPrototypeOf(node) == FunctionBody.prototype) {
-            return true;
-        }
-        return false;
-    }
+    // static isFunctionBodyNode(node) {
+    //     if (!node) {
+    //         return false;
+    //     }
+    //     if (Object.getPrototypeOf(node) == FunctionBody.prototype) {
+    //         return true;
+    //     }
+    //     return false;
+    // }
 
     dump(prefix) {
         console.log(prefix + "FunctionBody");
@@ -263,7 +348,9 @@ class FunctionBody extends AstNode {
     }
 }
 
-// FunctionCall
+/**
+ * node of FunctionCall
+ */
 class FunctionCall extends Statement {
     constructor(name, parameters) {
         super();
@@ -271,15 +358,15 @@ class FunctionCall extends Statement {
         this.name = name;
         this.parameters = parameters;
     }
-    static isFunctionCallNode(node) {
-        if (!node) {
-            return false;
-        }
-        if (Object.getPrototypeOf(node) == FunctionCall.prototype) {
-            return true;
-        }
-        return false;
-    }
+    // static isFunctionCallNode(node) {
+    //     if (!node) {
+    //         return false;
+    //     }
+    //     if (Object.getPrototypeOf(node) == FunctionCall.prototype) {
+    //         return true;
+    //     }
+    //     return false;
+    // }
     dump(prefix) {
         console.log(prefix + "FunctionCall " + this.name + (this.definition != null ? ", resolved" : ", not resolved"));
         this.parameters.forEach(x => console.log(prefix + "\t" + "Parameter: " + x));
@@ -299,24 +386,31 @@ class Parser {
     parseProg() {
         let stmts = [];
         let stmt = null;
-        while (true) {
+        let token = this.tokenizer.peek();
+        while (token.kind != TokenKind.EOF) {
             // just try statement is decl or call
             // if all not, then break the loop
-            stmt = this.parseFunctionDecl();
-            if (Statement.isStatementNode(stmt)) {
-                stmts.push(stmt);
-                continue;
+            if (token.kind == TokenKind.Keyword && token.text == 'function') {
+                stmt = this.parseFunctionDecl();
             }
+            if (token.kind == TokenKind.Identifier) {
+                stmt = this.parseFunctionCall();
+            }
+            // if (Statement.isStatementNode(stmt)) {
+            //     stmts.push(stmt);
+            //     continue;
+            // }
 
-            stmt = this.parseFunctionCall();
-            if (Statement.isStatementNode(stmt)) { // 02 question is here
+            // stmt = this.parseFunctionCall();
+            // if (Statement.isStatementNode(stmt)) { // 02 question is here
+            //     stmts.push(stmt);
+            //     continue;
+            // }
+            if (stmt != null) {
                 stmts.push(stmt);
-                continue;
+                console.log("success");
             }
-
-            if (stmt == null) {
-                break;
-            }
+            token = this.tokenizer.peep();
         }
         return new Prog(stmts);
     }
