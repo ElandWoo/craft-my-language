@@ -166,7 +166,7 @@ public class SimpleLexer {
      * @return
      * @throws IOException
      */
-    public SimpleTokenReader tokenize(String code) throws IOException {
+    public SimpleTokenReader tokenize(String code) {
         tokens = new ArrayList<Token>();
         CharArrayReader reader = new CharArrayReader(code.toCharArray());
         tokenText = new StringBuffer();
@@ -174,176 +174,180 @@ public class SimpleLexer {
         int ich = 0;
         char ch = 0;
         DfaState state = DfaState.Initial;
-        while ((ich = reader.read()) != -1) {
-            ch = (char) ich;
-            if (state == DfaState.Initial) {
-                state = initToken(ch); // ensure the next state
-                continue;
-            }
+        try {
+            while ((ich = reader.read()) != -1) {
+                ch = (char) ich;
+                if (state == DfaState.Initial) {
+                    state = initToken(ch); // ensure the next state
+                    continue;
+                }
 
-            if (state == DfaState.IntLiteral) {
-                if (isDigit(ch)) {
-                    tokenText.append(ch);
-                    continue;
-                }
-                state = initToken(ch);
-                continue;
-            }
-
-            if (state == DfaState.Id) {
-                if (isAlpha(ch) || isDigit(ch) || ch == '_') {
-                    tokenText.append(ch);
-                    continue;
-                }
-                state = initToken(ch);
-                continue;
-            }
-
-            if (state == DfaState.GT) {
-                if (ch == '=') {
-                    token.type = TokenType.GE;
-                    state = DfaState.GE;
-                    tokenText.append(ch);
-                    continue;
-                }
-                state = initToken(ch);
-                continue;
-            }
-            if (state == DfaState.LT) {
-                if (ch == '=') {
-                    token.type = TokenType.LE;
-                    state = DfaState.LE;
-                    tokenText.append(ch);
-                    continue;
-                }
-                state = initToken(ch);
-                continue;
-            }
-            if (state == DfaState.EQ) {
-                state = initToken(ch);
-                continue;
-            }
-            if (state == DfaState.GE) {
-                state = initToken(ch);
-                continue;
-            }
-            if (state == DfaState.LE) {
-                state = initToken(ch);
-                continue;
-            }
-
-            if (state == DfaState.Plus) {
-                state = initToken(ch);
-                continue;
-            }
-            if (state == DfaState.Minus) {
-                state = initToken(ch);
-                continue;
-            }
-            if (state == DfaState.Star) {
-                state = initToken(ch);
-                continue;
-            }
-            if (state == DfaState.Slash) {
-                state = initToken(ch);
-                continue;
-            }
-
-            if (state == DfaState.LeftParen) {
-                state = initToken(ch);
-                continue;
-            }
-            if (state == DfaState.RightParen) {
-                state = initToken(ch);
-                continue;
-            }
-            if (state == DfaState.SemiColon) {
-                state = initToken(ch);
-                continue;
-            }
-
-            if (state == DfaState.Id_int1) {
-                if (ch == 'n') {
-                    state = DfaState.Id_int2;
-                    tokenText.append(ch);
-                    continue;
-                }
-                if (isDigit(ch) || isAlpha(ch) || ch == '_') {
-                    state = DfaState.Id;
-                    tokenText.append(ch);
-                    continue;
-                }
-                state = initToken(ch);
-                continue;
-            }
-            if (state == DfaState.Id_int2) {
-                if (ch == 't') {
-                    state = DfaState.Id_int3;
-                    tokenText.append(ch);
-                    continue;
-                }
-                if (isDigit(ch) || isAlpha(ch) || ch == '_') {
-                    state = DfaState.Id;
-                    tokenText.append(ch);
-                    continue;
-                }
-                state = initToken(ch);
-                continue;
-            }
-            if (state == DfaState.Id_int3) {
-                if (isBlank(ch)) {
-                    token.type = TokenType.Int;
-                    System.out.println("ok?");
+                if (state == DfaState.IntLiteral) {
+                    if (isDigit(ch)) {
+                        tokenText.append(ch);
+                        continue;
+                    }
                     state = initToken(ch);
                     continue;
                 }
-                state = DfaState.Id;
-                tokenText.append(ch);
-                continue;
-            }
 
-            if (state == DfaState.Id_var1) {
-                if (ch == 'a') {
-                    state = DfaState.Id_var2;
-                    tokenText.append(ch);
-                    continue;
-                }
-                if (isDigit(ch) || isAlpha(ch) || ch == '_') {
-                    state = DfaState.Id;
-                    tokenText.append(ch);
-                    continue;
-                }
-                state = initToken(ch);
-                continue;
-            }
-            if (state == DfaState.Id_var2) {
-                if (ch == 'r') {
-                    state = DfaState.Id_var3;
-                    tokenText.append(ch);
-                    continue;
-                }
-                if (isDigit(ch) || isAlpha(ch) || ch == '_') {
-                    state = DfaState.Id;
-                    tokenText.append(ch);
-                    continue;
-                }
-                state = initToken(ch);
-                continue;
-            }
-            if (state == DfaState.Id_var3) {
-                if (isBlank(ch)) {
-                    token.type = TokenType.Var;
+                if (state == DfaState.Id) {
+                    if (isAlpha(ch) || isDigit(ch) || ch == '_') {
+                        tokenText.append(ch);
+                        continue;
+                    }
                     state = initToken(ch);
                     continue;
                 }
-                state = DfaState.Id;
-                tokenText.append(ch);
-                continue;
+
+                if (state == DfaState.GT) {
+                    if (ch == '=') {
+                        token.type = TokenType.GE;
+                        state = DfaState.GE;
+                        tokenText.append(ch);
+                        continue;
+                    }
+                    state = initToken(ch);
+                    continue;
+                }
+                if (state == DfaState.LT) {
+                    if (ch == '=') {
+                        token.type = TokenType.LE;
+                        state = DfaState.LE;
+                        tokenText.append(ch);
+                        continue;
+                    }
+                    state = initToken(ch);
+                    continue;
+                }
+                if (state == DfaState.EQ) {
+                    state = initToken(ch);
+                    continue;
+                }
+                if (state == DfaState.GE) {
+                    state = initToken(ch);
+                    continue;
+                }
+                if (state == DfaState.LE) {
+                    state = initToken(ch);
+                    continue;
+                }
+
+                if (state == DfaState.Plus) {
+                    state = initToken(ch);
+                    continue;
+                }
+                if (state == DfaState.Minus) {
+                    state = initToken(ch);
+                    continue;
+                }
+                if (state == DfaState.Star) {
+                    state = initToken(ch);
+                    continue;
+                }
+                if (state == DfaState.Slash) {
+                    state = initToken(ch);
+                    continue;
+                }
+
+                if (state == DfaState.LeftParen) {
+                    state = initToken(ch);
+                    continue;
+                }
+                if (state == DfaState.RightParen) {
+                    state = initToken(ch);
+                    continue;
+                }
+                if (state == DfaState.SemiColon) {
+                    state = initToken(ch);
+                    continue;
+                }
+
+                if (state == DfaState.Id_int1) {
+                    if (ch == 'n') {
+                        state = DfaState.Id_int2;
+                        tokenText.append(ch);
+                        continue;
+                    }
+                    if (isDigit(ch) || isAlpha(ch) || ch == '_') {
+                        state = DfaState.Id;
+                        tokenText.append(ch);
+                        continue;
+                    }
+                    state = initToken(ch);
+                    continue;
+                }
+                if (state == DfaState.Id_int2) {
+                    if (ch == 't') {
+                        state = DfaState.Id_int3;
+                        tokenText.append(ch);
+                        continue;
+                    }
+                    if (isDigit(ch) || isAlpha(ch) || ch == '_') {
+                        state = DfaState.Id;
+                        tokenText.append(ch);
+                        continue;
+                    }
+                    state = initToken(ch);
+                    continue;
+                }
+                if (state == DfaState.Id_int3) {
+                    if (isBlank(ch)) {
+                        token.type = TokenType.Int;
+                        System.out.println("ok?");
+                        state = initToken(ch);
+                        continue;
+                    }
+                    state = DfaState.Id;
+                    tokenText.append(ch);
+                    continue;
+                }
+
+                if (state == DfaState.Id_var1) {
+                    if (ch == 'a') {
+                        state = DfaState.Id_var2;
+                        tokenText.append(ch);
+                        continue;
+                    }
+                    if (isDigit(ch) || isAlpha(ch) || ch == '_') {
+                        state = DfaState.Id;
+                        tokenText.append(ch);
+                        continue;
+                    }
+                    state = initToken(ch);
+                    continue;
+                }
+                if (state == DfaState.Id_var2) {
+                    if (ch == 'r') {
+                        state = DfaState.Id_var3;
+                        tokenText.append(ch);
+                        continue;
+                    }
+                    if (isDigit(ch) || isAlpha(ch) || ch == '_') {
+                        state = DfaState.Id;
+                        tokenText.append(ch);
+                        continue;
+                    }
+                    state = initToken(ch);
+                    continue;
+                }
+                if (state == DfaState.Id_var3) {
+                    if (isBlank(ch)) {
+                        token.type = TokenType.Var;
+                        state = initToken(ch);
+                        continue;
+                    }
+                    state = DfaState.Id;
+                    tokenText.append(ch);
+                    continue;
+                }
             }
-        }
-        // push the last token
-        if (tokenText.length() > 0) {
-            initToken(ch);
+            // push the last token
+            if (tokenText.length() > 0) {
+                initToken(ch);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         return new SimpleTokenReader(tokens);
     }
