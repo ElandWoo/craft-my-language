@@ -1,0 +1,27 @@
+public enum TokenType {
+    PLUS, MINU, MULT, DIV,ASSIGN,
+
+    // log : ok
+    GRE, GEQ, LSS, LEQ, EQL,NEQ,
+
+    INTTK,
+    IFTK,
+    ELSETK,
+    Var,
+    VOIDTK,
+    CHARTK,
+    CONSTTK,
+    MAINTK,
+    DOTK,
+    WHILETK,
+    FORTK,
+    PRINTFTK,
+    SCANFTK,
+    RETURNTK,
+
+    LPARENT, RPARENT, LBRACK, RBRACK, LBRACE, RBRACE,
+    SEMICN,COMMA,TAN,
+
+    IDENFR,
+    INTCON,CHARCON,STRCON,
+}

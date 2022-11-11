@@ -11,7 +11,7 @@ public enum ASTNodeType {
     Primary, // 
     Multiplicative,
     Additive,
-    
-    Identifier,
+
+    IDENFR,
     IntLiteral, IntDeclaration
 }

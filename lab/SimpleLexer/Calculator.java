@@ -155,7 +155,7 @@ public class Calculator {
         Token token = tokens.peek();
         TokenType tokenType = token.getType();
         if (child1 != null && token != null) {
-            if (tokenType == TokenType.Plus || tokenType == TokenType.Minus) {
+            if (tokenType == TokenType.PLUS || tokenType == TokenType.MINU) {
                 token = tokens.read();
                 SimpleASTNode child2 = additive(tokens);
                 if (child2 == null) {
@@ -185,7 +185,7 @@ public class Calculator {
         Token token = tokens.peek();
         TokenType tokenType = token.getType();
         if (token != null && node != null) {
-            if (tokenType == TokenType.Star || tokenType == TokenType.Slash) {
+            if (tokenType == TokenType.MULT || tokenType == TokenType.DIV) {
                 token = tokens.read();
                 SimpleASTNode child2 = multiplicative(tokens);
                 if (child2 == null) {
@@ -213,15 +213,15 @@ public class Calculator {
         TokenType tokenType = token.getType();
         String tokenText = token.getText();
         if (token != null) {
-            if (tokenType == TokenType.IntLiteral) {
+            if (tokenType == TokenType.INTCON) {
                 token = tokens.read();
                 node = new SimpleASTNode(ASTNodeType.IntLiteral, tokenText);
             }
-            if (tokenType == TokenType.Identifier) {
+            if (tokenType == TokenType.IDENFR) {
                 token = tokens.read();
-                node = new SimpleASTNode(ASTNodeType.Identifier, tokenText);
+                node = new SimpleASTNode(ASTNodeType.IDENFR, tokenText);
             }
-            if (tokenType == TokenType.LeftParen) {
+            if (tokenType == TokenType.LPARENT) {
                 tokens.read();
                 node = additive(tokens);
                 if (node == null) {
@@ -229,10 +229,10 @@ public class Calculator {
                 }
                 if (node != null) {
                     token = tokens.peek();
-                    if (token != null && tokenType == TokenType.RightParen) {
+                    if (token != null && tokenType == TokenType.RPARENT) {
                         tokens.read();
                     }
-                    if (token == null || tokenType != TokenType.RightParen) {
+                    if (token == null || tokenType != TokenType.LPARENT) {
                         throw new Exception("Expecting right parenthesis.");
                     }
                 }
@@ -302,14 +302,14 @@ public class Calculator {
     private SimpleASTNode intDeclare(TokenReader tokens) throws Exception {
         SimpleASTNode node = null;
         Token token = tokens.peek(); // 预读
-        if (token != null && token.getType() == TokenType.Int) { // 匹配Int
+        if (token != null && token.getType() == TokenType.INTTK) { // 匹配Int
             token = tokens.read(); // 消耗掉int
-            if (tokens.peek().getType() == TokenType.Identifier) { // 匹配标识符
+            if (tokens.peek().getType() == TokenType.IDENFR) { // 匹配标识符
                 token = tokens.read(); // 消耗掉标识符
                 // 创建当前节点，并把变量名记到AST节点的文本值中，这里新建一个变量子节点也是可以的
                 node = new SimpleASTNode(ASTNodeType.IntDeclaration, token.getText());
                 token = tokens.peek(); // 预读
-                if (token != null && token.getType() == TokenType.EQ) {
+                if (token != null && token.getType() == TokenType.ASSIGN) {
                     tokens.read(); // 消耗掉等号
                     SimpleASTNode child = additive(tokens); // 匹配一个表达式
                     if (child == null) {
@@ -324,7 +324,7 @@ public class Calculator {
 
             if (node != null) {
                 token = tokens.peek();
-                if (token != null && token.getType() == TokenType.SemiColon) {
+                if (token != null && token.getType() == TokenType.SEMICN) {
                     tokens.read();
                 } else {
                     throw new Exception("invalid statement, expecting semicolon");
